@@ -1,57 +1,366 @@
 <!doctype html>
 <html lang="ko">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>업체 정보 제출 (테스트용)</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>업체 정보 제출</title>
+  <meta name="description" content="업체 정보를 입력하고 이미지와 함께 안전하게 제출하세요." />
+
+  <style>
+    :root{
+      --bg:#f5f7fb;
+      --card:#ffffff;
+      --primary:#0b74de;
+      --muted:#6b7280;
+      --radius:12px;
+      --max-width:900px;
+    }
+    *{box-sizing:border-box}
+    body{
+      font-family: Inter, "Noto Sans KR", system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", Arial;
+      margin:0;padding:24px;background:var(--bg);color:#111;
+      -webkit-font-smoothing:antialiased;
+    }
+
+    .wrap{
+      max-width:var(--max-width);
+      margin:20px auto;
+      padding:20px;
+    }
+
+    .card{
+      background:var(--card);
+      border-radius:var(--radius);
+      padding:20px;
+      box-shadow: 0 8px 30px rgba(12,20,30,0.06);
+    }
+
+    header{
+      display:flex;gap:16px;align-items:center;margin-bottom:12px;
+    }
+    header h1{margin:0;font-size:20px;color:var(--primary)}
+    header p{margin:0;color:var(--muted);font-size:13px}
+
+    form {
+      display:grid;
+      grid-template-columns: 1fr 340px;
+      gap:18px;
+      align-items:start;
+    }
+
+    /* left column inputs */
+    .left {
+      display:flex;flex-direction:column;gap:10px;
+    }
+
+    label{
+      font-weight:600;font-size:14px;margin-bottom:6px;
+      display:block;color:#111;
+    }
+
+    input[type="text"], input[type="tel"], input[type="url"], input[type="number"], textarea {
+      width:100%;
+      padding:12px;
+      border-radius:10px;
+      border:1px solid #e6e9ef;
+      background: #fff;
+      font-size:14px;
+      outline:none;
+      transition:box-shadow .12s, border-color .12s;
+    }
+    input:focus, textarea:focus { box-shadow:0 4px 18px rgba(11,116,222,0.08); border-color:var(--primary); }
+
+    textarea { min-height:120px; resize:vertical; }
+
+    .row { display:flex; gap:12px; }
+    .row .col { flex:1; }
+
+    /* right column - preview / info */
+    .right {
+      border-left: 1px dashed #eef2f6;
+      padding-left:18px;
+      min-height: 200px;
+    }
+
+    .photos-box {
+      border:1px dashed #e6eefc;
+      border-radius:10px;
+      padding:12px;
+      background: linear-gradient(180deg, rgba(11,116,222,0.02), rgba(255,255,255,0));
+    }
+    .photos-box input { width:100%; padding:6px 0; }
+
+    .preview-grid { display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+    .thumb {
+      width:100px; height:80px; border-radius:8px; overflow:hidden; background:#fafafa; border:1px solid #eef2f6;
+      display:flex;align-items:center;justify-content:center; position:relative;
+    }
+    .thumb img{ max-width:100%; max-height:100%; display:block; }
+
+    .meta { font-size:12px; color:var(--muted); margin-top:10px; }
+
+    .actions {
+      display:flex; gap:12px; margin-top:18px; align-items:center;
+    }
+    button.primary {
+      background:var(--primary); color:#fff; border:0; padding:12px 18px; border-radius:10px; font-weight:700; cursor:pointer;
+    }
+    button.ghost {
+      background:transparent; border:1px solid #dbe7fb; padding:10px 14px; border-radius:10px; color:var(--primary); cursor:pointer;
+    }
+    button[disabled]{opacity:0.6; cursor:not-allowed}
+
+    .status {
+      margin-top:12px; font-size:13px;
+    }
+    .progress { width:100%; height:8px; background:#f0f4fb; border-radius:8px; overflow:hidden; margin-top:8px; }
+    .bar { height:100%; width:0%; background:var(--primary); transition:width .2s; }
+
+    .help { font-size:13px; color:var(--muted); margin-top:10px; }
+
+    footer { margin-top:16px; font-size:13px; color:var(--muted); text-align:center; }
+
+    /* responsive */
+    @media (max-width:900px){
+      form { grid-template-columns: 1fr; }
+      .right { border-left: none; padding-left: 0; margin-top: 6px; }
+    }
+  </style>
 </head>
 <body>
-  <h2>테스트 폼</h2>
-  <form id="bizForm" action="https://business-vnrj.onrender.com/submit" method="POST" enctype="multipart/form-data">
-    <label>업체명 *</label>
-    <input name="업체명" required />
+  <div class="wrap">
+    <div class="card" role="region" aria-labelledby="formTitle">
+      <header>
+        <div>
+          <h1 id="formTitle">업체 정보 제출</h1>
+          <p>업체 정보를 입력하고 이미지(선택)를 함께 업로드 하세요. (최대 5장)</p>
+        </div>
+      </header>
 
-    <label>주소지 *</label>
-    <input name="주소지" required />
+      <form id="bizForm" action="https://business-vnrj.onrender.com/submit" method="POST" enctype="multipart/form-data" novalidate>
+        <div class="left">
+          <div>
+            <label for="name">업체명 <span style="color:#d02525">*</span></label>
+            <input id="name" name="업체명" type="text" placeholder="예: OO카페" required />
+          </div>
 
-    <label>전화번호 *</label>
-    <input name="전화번호" required />
+          <div>
+            <label for="addr">주소지 <span style="color:#d02525">*</span></label>
+            <input id="addr" name="주소지" type="text" placeholder="예: 대전광역시 ..." required />
+          </div>
 
-    <label>SUT 할인율 (%) *</label>
-    <input name="SUT_할인율" required />
+          <div class="row">
+            <div class="col">
+              <label for="phone">전화번호 <span style="color:#d02525">*</span></label>
+              <input id="phone" name="전화번호" type="tel" placeholder="010-1234-5678" required />
+            </div>
+            <div class="col">
+              <label for="discount">SUT 할인율 (%) <span style="color:#d02525">*</span></label>
+              <input id="discount" name="SUT_할인율" type="number" min="0" max="100" step="0.01" placeholder="예: 10" required />
+            </div>
+          </div>
 
-    <label>네이버지도 링크 *</label>
-    <input name="네이버지도링크" required />
+          <div>
+            <label for="naver">네이버지도 링크 <span style="color:#d02525">*</span></label>
+            <input id="naver" name="네이버지도링크" type="url" placeholder="https://map.naver.com/..." required />
+          </div>
 
-    <label>업체 소개 *</label>
-    <textarea name="업체소개" required></textarea>
+          <div>
+            <label for="desc">업체 소개 <span style="color:#d02525">*</span></label>
+            <textarea id="desc" name="업체소개" placeholder="가게를 소개하는 글을 적어주세요." required></textarea>
+          </div>
 
-    <label>홍보태그</label>
-    <input name="홍보태그" />
+          <div>
+            <label for="tags">가게 홍보 태그</label>
+            <input id="tags" name="홍보태그" type="text" placeholder="#카페 #디저트" />
+          </div>
 
-    <!-- 파일은 선택 -->
-    <label>사진 (선택)</label>
-    <input name="photos" type="file" accept="image/*" />
+          <div class="actions">
+            <button id="submitBtn" class="primary" type="submit">제출하기</button>
+            <button id="clearBtn" type="button" class="ghost">양식 초기화</button>
+            <div style="flex:1"></div>
+          </div>
 
-    <button type="submit">제출하기</button>
-  </form>
+          <div class="status" id="statusArea" aria-live="polite"></div>
+          <div class="progress" id="progressWrap" style="display:none"><div class="bar" id="progressBar"></div></div>
 
-  <div id="msg"></div>
+        </div> <!-- left -->
+
+        <aside class="right" aria-label="이미지 업로드 및 미리보기">
+          <div class="photos-box">
+            <label for="photos">업체홍보 사진 (최대 5장)</label>
+            <input id="photos" name="photos" type="file" accept="image/*" multiple />
+            <div class="help">권장: 가로/세로 1200px 이하, 파일당 1~2MB 이하</div>
+
+            <div id="preview" class="preview-grid" aria-live="polite"></div>
+            <div class="meta" id="metaInfo"></div>
+          </div>
+
+          <div style="margin-top:12px" class="help">
+            <strong>주의:</strong> 첫 전송 후 관리자 이메일(choieuisin@naver.com)에서 활성화 메일이 올 수 있습니다.<br>
+            서버 연결문제가 있을 경우 페이지 하단 또는 개발자 도구 Console을 확인하세요.
+          </div>
+        </aside>
+
+      </form>
+
+      <footer>제출된 정보는 블로그 게시용으로 사용됩니다. 개인정보는 안전하게 처리됩니다.</footer>
+    </div>
+  </div>
 
 <script>
-document.getElementById('bizForm').addEventListener('submit', async function(e){
+/*
+  깔끔한 레이아웃 + 기본 이미지 미리보기 + 전송 로직
+  - 서버 URL: form.action (기본은 Render에 배포된 주소)
+  - 필수 필드 검사(클라이언트)
+  - 이미지 최대 5장 검사
+  - 전송 중 버튼 비활성화 및 진행률 표시
+*/
+
+const form = document.getElementById('bizForm');
+const photosEl = document.getElementById('photos');
+const previewEl = document.getElementById('preview');
+const statusArea = document.getElementById('statusArea');
+const submitBtn = document.getElementById('submitBtn');
+const clearBtn = document.getElementById('clearBtn');
+const progressWrap = document.getElementById('progressWrap');
+const progressBar = document.getElementById('progressBar');
+const metaInfo = document.getElementById('metaInfo');
+
+const MAX_FILES = 5;
+
+function humanFileSize(bytes){
+  if(bytes === 0) return '0 B';
+  const i = Math.floor(Math.log(bytes)/Math.log(1024));
+  const sizes = ['B','KB','MB','GB'];
+  return (bytes/Math.pow(1024,i)).toFixed(i===0?0:2) + ' ' + sizes[i];
+}
+
+photosEl.addEventListener('change', () => {
+  previewEl.innerHTML = '';
+  metaInfo.textContent = '';
+  const files = Array.from(photosEl.files || []);
+  if(files.length === 0) return;
+  if(files.length > MAX_FILES){
+    alert(`사진은 최대 ${MAX_FILES}장까지 업로드 가능합니다.`);
+    photosEl.value = '';
+    return;
+  }
+
+  files.slice(0,MAX_FILES).forEach(f => {
+    const box = document.createElement('div');
+    box.className = 'thumb';
+    const img = document.createElement('img');
+    box.appendChild(img);
+    previewEl.appendChild(box);
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(f);
+  });
+
+  // meta summary
+  const total = files.reduce((s, f) => s + (f.size || 0), 0);
+  metaInfo.textContent = `선택: ${files.length}장 · 총 용량 ${humanFileSize(total)}`;
+});
+
+clearBtn.addEventListener('click', () => {
+  form.reset();
+  previewEl.innerHTML = '';
+  metaInfo.textContent = '';
+  statusArea.textContent = '';
+});
+
+// submission
+form.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const f = new FormData(this);
-  const msg = document.getElementById('msg');
-  msg.textContent = '전송중...';
+  statusArea.textContent = '';
+  // client-side required checks (redundant but helpful)
+  const requiredFields = ['업체명','주소지','전화번호','SUT_할인율','네이버지도링크','업체소개'];
+  for(const name of requiredFields){
+    const el = form.querySelector(`[name="${name}"]`);
+    if(!el || !el.value || el.value.toString().trim() === ''){
+      el && el.focus();
+      statusArea.textContent = `필수 항목이 비어 있습니다: ${name}`;
+      return;
+    }
+  }
+
+  // files check
+  const files = Array.from(photosEl.files || []);
+  if(files.length > MAX_FILES){
+    statusArea.textContent = `사진은 최대 ${MAX_FILES}장까지 업로드 가능합니다.`;
+    return;
+  }
+
+  // prepare formdata (send fields with exact server names)
+  const fd = new FormData();
+  fd.append('업체명', form.querySelector('[name="업체명"]').value.trim());
+  fd.append('주소지', form.querySelector('[name="주소지"]').value.trim());
+  fd.append('전화번호', form.querySelector('[name="전화번호"]').value.trim());
+  fd.append('SUT_할인율', form.querySelector('[name="SUT_할인율"]').value.trim());
+  fd.append('네이버지도링크', form.querySelector('[name="네이버지도링크"]').value.trim());
+  fd.append('업체소개', form.querySelector('[name="업체소개"]').value.trim());
+  fd.append('홍보태그', form.querySelector('[name="홍보태그"]').value.trim());
+
+  // append files
+  files.forEach((f, i) => {
+    // keep name as server expects: photos (multer array)
+    fd.append('photos', f, f.name);
+  });
+
+  // send via fetch (CORS must be allowed on server)
+  submitBtn.disabled = true;
+  submitBtn.textContent = '전송중...';
+  progressWrap.style.display = 'block';
+  progressBar.style.width = '0%';
+  statusArea.textContent = '서버로 전송 중...';
+
   try {
-    const res = await fetch(this.action, { method:'POST', body: f, mode:'cors' });
-    const json = await res.json();
-    msg.textContent = (res.ok ? '성공: ' : '실패: ') + (json.message || res.statusText);
-    console.log('response', res.status, json);
+    // Use XMLHttpRequest for upload progress
+    await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', form.action, true);
+      xhr.timeout = 60000; // 60s
+      xhr.upload.onprogress = (ev) => {
+        if(ev.lengthComputable){
+          const pct = Math.round((ev.loaded / ev.total) * 100);
+          progressBar.style.width = pct + '%';
+        }
+      };
+      xhr.onload = function(){
+        if(xhr.status >= 200 && xhr.status < 300){
+          try {
+            const json = JSON.parse(xhr.responseText || '{}');
+            statusArea.textContent = (json.ok ? '제출 완료: ' : '전송 실패: ') + (json.message || xhr.statusText);
+          } catch(e) {
+            statusArea.textContent = '제출 완료 (서버 응답을 해석할 수 없습니다).';
+          }
+          resolve();
+        } else {
+          reject(new Error('서버 오류: ' + xhr.status + ' ' + xhr.statusText));
+        }
+      };
+      xhr.onerror = function(){ reject(new Error('네트워크 오류 또는 CORS 에러')); };
+      xhr.ontimeout = function(){ reject(new Error('전송 타임아웃')); };
+      xhr.send(fd);
+    });
+
+    // success: reset
+    form.reset();
+    previewEl.innerHTML = '';
+    metaInfo.textContent = '';
   } catch(err){
-    msg.textContent = '네트워크 오류: ' + err.message;
     console.error(err);
+    statusArea.textContent = '전송 실패: ' + err.message;
+    // 안내: 500 에러가 자꾸 나면 서버 로그 확인 필요
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = '제출하기';
+    progressWrap.style.display = 'none';
+    progressBar.style.width = '0%';
   }
 });
 </script>
