@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>업체 정보 제출 (안정형)</title>
+<style>
+  body{font-family:system-ui, "Noto Sans KR";padding:20px;background:#f6f8fb}
+  .card{max-width:800px;margin:0 auto;background:#fff;padding:18px;border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,0.06)}
+  label{display:block;margin-top:12px;font-weight:600}
+  input,textarea{width:100%;padding:10px;margin-top:6px;border-radius:8px;border:1px solid #ddd;box-sizing:border-box}
+  button{margin-top:14px;padding:12px;border-radius:8px;border:0;background:#0b74de;color:#fff;font-weight:700}
+  .small{font-size:13px;color:#666}
+  #msg{margin-top:12px}
+</style>
+</head>
+<body>
+  <div class="card">
+    <h2>업체 정보 제출</h2>
+    <p class="small">이미지 포함 제출(최대 5장). 안정적인 접수가 가능합니다.</p>
+
+    <!-- action을 배포된 서버 주소로 변경하세요 -->
+    <form id="bizForm" action="https://YOUR-SERVER-URL/submit" method="POST" enctype="multipart/form-data">
+      <label>업체명 *</label><input name="업체명" required />
+      <label>주소지 *</label><input name="주소지" required />
+      <label>전화번호 *</label><input name="전화번호" required />
+      <label>SUT 할인율(%) *</label><input name="SUT_할인율" type="number" step="0.01" required />
+      <label>네이버지도 링크 *</label><input name="네이버지도링크" type="url" required />
+      <label>업체홍보 사진 (최대 5장)</label><input name="photos" type="file" accept="image/*" multiple />
+      <label>업체 소개 *</label><textarea name="업체소개" rows="5" required></textarea>
+      <label>홍보태그</label><input name="홍보태그" />
+      <button type="submit">제출하기</button>
+    </form>
+
+    <div id="msg" class="small" style="color:#333"></div>
+  </div>
+
+<script>
+document.getElementById('bizForm').addEventListener('submit', async function(e){
+  e.preventDefault();
+  const form = e.target;
+  const msg = document.getElementById('msg');
+  msg.textContent = '전송 중... 잠시만 기다려주세요.';
+  const fd = new FormData(form);
+
+  try{
+    const resp = await fetch(form.action, { method: 'POST', body: fd });
+    const json = await resp.json();
+    if(resp.ok && json.ok){
+      msg.textContent = '제출 완료: ' + (json.message || '감사합니다.');
+      form.reset();
+    } else {
+      msg.textContent = '전송 실패: ' + (json.message || resp.statusText);
+    }
+  } catch(err){
+    msg.textContent = '네트워크 오류: ' + err.message;
+  }
+});
+</script>
+</body>
+</html>
