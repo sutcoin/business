@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>SUT 업체 제출</title>
+  <title>"SUT업체 정보 제출"</title>
   <style>
     body{font-family:system-ui, "Noto Sans KR", sans-serif; padding:18px; background:#f6f8fb; color:#222}
     .card{max-width:920px;margin:18px auto;background:#fff;padding:20px;border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,0.06)}
@@ -11,7 +11,6 @@
     label{display:block;margin-top:12px;font-weight:600}
     input, textarea, button{width:100%;padding:10px;margin-top:6px;border-radius:8px;border:1px solid #ddd;box-sizing:border-box}
     .small{font-size:13px;color:#666}
-    .files input{width:100%}
     .preview-grid{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px}
     .preview{width:150px;border-radius:8px;padding:8px;background:#fafafa;border:1px solid #eee;box-sizing:border-box;text-align:center}
     .preview img{max-width:100%;height:auto;border-radius:6px}
@@ -22,15 +21,17 @@
     button.primary{background:#0b74de;color:#fff;border:0;font-weight:700;cursor:pointer;padding:12px;border-radius:8px}
     button.primary[disabled]{opacity:0.6;cursor:not-allowed}
     .note{margin-top:10px;font-size:13px;color:#444}
+    .actions{display:flex;gap:8px;margin-top:10px}
+    .btn-ghost{background:#fff;border:1px solid #0b74de;color:#0b74de;padding:10px;border-radius:8px;cursor:pointer}
   </style>
 </head>
 <body>
   <div class="card">
     <h2>업체 정보 제출</h2>
-    <p class="small">이미지 자동 최적화 기능이 포함되어 있습니다. (최대 5장)</p>
+    <p class="small">이미지 자동 최적화(안정성 강화) 기능이 포함되어 있습니다. (최대 3장)</p>
 
     <form id="businessForm" action="#" method="POST" enctype="multipart/form-data" onsubmit="return false;">
-      <!-- 전송 대상은 Formsubmit.co (아래 JS에서 XHR로 전송) -->
+      <!-- Formsubmit 전송: JS에서 XHR로 전송 -->
       <input type="hidden" name="_next" value="https://google.com" />
       <input type="hidden" name="_captcha" value="false" />
 
@@ -49,11 +50,11 @@
       <label>네이버지도 링크 *</label>
       <input id="navermap" name="네이버지도링크" type="url" required placeholder="https://map.naver.com/..." />
 
-      <label>업체홍보 사진 (최대 5장)</label>
+      <label>업체홍보 사진 (최대 3장)</label>
       <div class="files">
         <input id="photos" type="file" accept="image/*" multiple />
       </div>
-      <div class="small">자동 리사이즈: 최대 1200px(가로/세로) → JPEG 압축(용량 최적화). 파일당 목표 최대 3MB.</div>
+      <div class="small">이미지는 클라이언트에서 강력히 최적화됩니다. 용량/해상도가 크면 업로드가 거부될 수 있으니 3장 이내로 올려주세요.</div>
 
       <div id="preview" class="preview-grid" aria-live="polite"></div>
 
@@ -64,109 +65,121 @@
       <input id="tags" name="홍보태그" placeholder="#카페, #브런치" />
 
       <div class="status" id="statusArea"></div>
-
       <div class="progress" id="progressWrap" style="display:none"><div class="bar" id="progressBar"></div></div>
 
-      <button id="submitBtn" class="primary" type="button">제출하기</button>
+      <div class="actions">
+        <button id="submitBtn" class="primary" type="button">제출하기</button>
+        <button id="sendWithoutImages" class="btn-ghost" type="button">이미지 제외하고 전송</button>
+      </div>
     </form>
 
     <p class="note">주의: Formsubmit은 첫 사용 시 수신자(choieuisin@naver.com)에서 활성화 메일을 클릭해야 정상 수신됩니다.</p>
   </div>
 
 <script>
-/*
-  이미지 최적화 + 제출 스크립트
-  - 최대 이미지 수: 5
-  - 리사이즈 최대 치수: 1200px
-  - 목표 압축 최대 파일 사이즈: 3MB (품질을 낮춰 재시도)
-  - 최소 품질: 0.4
-  - 전송은 XMLHttpRequest (진행률 표시 가능)
-  - 전송 대상: https://formsubmit.co/choieuisin@naver.com
+/* 안정성 강화된 이미지 최적화 + 제출 스크립트
+   변경 주요값:
+   - MAX_FILES: 3
+   - START_DIM: 800px
+   - TARGET_SIZE: 1,000,000 bytes (1MB)
+   - MIN_QUALITY: 0.25
+   - 반복적으로 리사이즈(비율 0.8씩 축소)하며 목표 도달 시까지 시도
+   - 목표 도달 실패하면 해당 이미지는 업로드에서 제외(사용자에게 알림)
 */
 
-const MAX_FILES = 5;
-const MAX_DIM = 1200;            // 최대 가로/세로 픽셀
-const TARGET_SIZE = 3 * 1024*1024; // 3MB
-const MIN_QUALITY = 0.4;
-const START_QUALITY = 0.8;
+const MAX_FILES = 3;
+const START_DIM = 800;
+const TARGET_SIZE = 1 * 1024 * 1024; // 1MB
+const MIN_QUALITY = 0.25;
+const START_QUALITY = 0.7;
+const MIN_DIM = 300; // 더 이상 줄이지 않음
 
 const photosEl = document.getElementById('photos');
 const previewEl = document.getElementById('preview');
 const statusArea = document.getElementById('statusArea');
 const submitBtn = document.getElementById('submitBtn');
+const sendWithoutImagesBtn = document.getElementById('sendWithoutImages');
 const progressWrap = document.getElementById('progressWrap');
 const progressBar = document.getElementById('progressBar');
 const form = document.getElementById('businessForm');
 
-let selectedFiles = []; // 원본 File 객체 배열
-let optimizedFiles = []; // {name, blob, size, width, height}
+let selectedFiles = [];
+let optimizedFiles = []; // {name, blob, size, width, height, note}
 
 function humanFileSize(bytes){
   if (bytes === 0) return '0 B';
   const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  const sizes = ['B','KB','MB','GB','TB'];
-  return (bytes / Math.pow(1024, i)).toFixed( (i===0?0:2) ) + ' ' + sizes[i];
+  const sizes = ['B','KB','MB','GB'];
+  return (bytes / Math.pow(1024, i)).toFixed(i===0?0:2) + ' ' + sizes[i];
 }
 
-// 이미지 압축 함수: 파일 -> Blob
-function compressImageFile(file, maxDim = MAX_DIM, targetSize = TARGET_SIZE){
-  return new Promise((resolve, reject)=>{
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = async () => {
-      try{
-        let width = img.naturalWidth;
-        let height = img.naturalHeight;
-        // 리사이즈 비율 계산
-        const ratio = Math.min(1, maxDim / Math.max(width, height));
-        const newW = Math.round(width * ratio);
-        const newH = Math.round(height * ratio);
+// 캔버스 -> Blob(프로미스)
+function canvasToBlob(canvas, quality){
+  return new Promise(res => canvas.toBlob(res, 'image/jpeg', quality));
+}
 
-        // 캔버스에 그리기
-        const canvas = document.createElement('canvas');
-        canvas.width = newW;
-        canvas.height = newH;
-        const ctx = canvas.getContext('2d');
-        // 배경을 흰색으로 채워 투명 PNG를 JPEG로 변환 시 검은 배경 문제 방지
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0,0,canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0, newW, newH);
+// 이미지를 주어진 width/height로 캔버스에 그리고 Blob 얻기
+async function renderToBlob(img, width, height, quality){
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  // 흰 배경 채움 (PNG 투명일 경우)
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.drawImage(img, 0, 0, width, height);
+  const blob = await canvasToBlob(canvas, quality);
+  return blob;
+}
 
-        // 시도: 여러 품질로 압축 (quality 0.8 -> 0.6 -> 0.5 -> 0.4)
-        let q = START_QUALITY;
-        let blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', q));
-        if(blob.size <= targetSize) {
-          URL.revokeObjectURL(url);
-          resolve({ blob, width: newW, height: newH, quality: q });
-          return;
-        }
-        // 점진적 감소
-        const tries = [0.65, 0.55, 0.45, MIN_QUALITY];
-        for(const tq of tries){
-          blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', tq));
-          if(blob.size <= targetSize) {
-            URL.revokeObjectURL(url);
-            resolve({ blob, width: newW, height: newH, quality: tq });
-            return;
-          }
-        }
-        // 그래도 크면 리턴(최저 품질 blob)
-        URL.revokeObjectURL(url);
-        resolve({ blob, width: newW, height: newH, quality: MIN_QUALITY });
-      } catch(err){
-        URL.revokeObjectURL(url);
-        reject(err);
-      }
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error('이미지 로드 실패'));
-    };
-    img.src = url;
+// 공격적 최적화: 반복적 리사이즈 + 품질 감소 시도
+async function aggressiveOptimize(file){
+  if(!file.type.startsWith('image/')) throw new Error('이미지 파일이 아닙니다.');
+  const img = new Image();
+  const url = URL.createObjectURL(file);
+  img.src = url;
+  await new Promise((res, rej) => {
+    img.onload = res;
+    img.onerror = () => rej(new Error('이미지 로드 실패'));
   });
+
+  let width = img.naturalWidth;
+  let height = img.naturalHeight;
+  // 우선 비율 조정
+  let ratio = Math.min(1, START_DIM / Math.max(width, height));
+  let newW = Math.round(width * ratio);
+  let newH = Math.round(height * ratio);
+  let quality = START_QUALITY;
+  let blob = await renderToBlob(img, newW, newH, quality);
+
+  // 반복 시도: 크기가 목표보다 크면, 품질을 낮추거나 크기 줄이기
+  while(blob.size > TARGET_SIZE && (quality > MIN_QUALITY || Math.max(newW, newH) > MIN_DIM)){
+    // 우선 품질을 낮춘다
+    if(quality > MIN_QUALITY + 0.05){
+      quality = Math.max(MIN_QUALITY, quality - 0.15);
+    } else {
+      // 품질이 이미 낮으면 크기 재조정(80%로 축소)
+      newW = Math.round(newW * 0.8);
+      newH = Math.round(newH * 0.8);
+      if(newW < MIN_DIM) { newW = MIN_DIM; }
+      if(newH < MIN_DIM) { newH = MIN_DIM; }
+    }
+    blob = await renderToBlob(img, newW, newH, quality);
+    // 안전 장치: 무한 루프 방지
+    if(newW <= MIN_DIM && quality <= MIN_QUALITY) break;
+  }
+
+  URL.revokeObjectURL(url);
+  return {
+    blob,
+    width: newW,
+    height: newH,
+    size: blob.size,
+    quality
+  };
 }
 
-// 파일 선택 처리
+// 파일 입력 처리
 photosEl.addEventListener('change', async (e) => {
   selectedFiles = Array.from(e.target.files || []);
   previewEl.innerHTML = '';
@@ -176,171 +189,187 @@ photosEl.addEventListener('change', async (e) => {
   if(selectedFiles.length === 0) return;
 
   if(selectedFiles.length > MAX_FILES){
-    alert(`최대 ${MAX_FILES}장까지 선택 가능합니다.`);
+    alert(`최대 ${MAX_FILES}장까지 선택 가능합니다. 선택하신 파일 수: ${selectedFiles.length}`);
     photosEl.value = '';
     selectedFiles = [];
     return;
   }
 
-  // 비동기 압축 작업 시작 (고지)
-  statusArea.textContent = '이미지 최적화 중... 잠시만 기다려주세요.';
+  statusArea.textContent = '이미지 최적화 시작... 잠시만 기다려 주세요.';
   submitBtn.disabled = true;
 
   for(const file of selectedFiles){
-    // 파일 타입 체크
-    if(!file.type.startsWith('image/')){
-      alert(`이미지 파일만 업로드 가능합니다: ${file.name}`);
-      continue;
-    }
-    // 압축 시도
     try{
-      const res = await compressImageFile(file);
-      optimizedFiles.push({
-        name: file.name.replace(/\s+/g,'_').replace(/[^\w\-.]/g,''),
-        blob: res.blob,
-        size: res.blob.size,
-        width: res.width,
-        height: res.height,
-        quality: res.quality
-      });
+      const res = await aggressiveOptimize(file);
+      // 목표보다 훨씬 크면 업로드 제외
+      if(res.size > TARGET_SIZE * 1.2){ // 20% 여유 마진
+        const warnCard = document.createElement('div');
+        warnCard.className = 'preview';
+        warnCard.innerHTML = `<div style="color:#b22222;font-weight:700">압축 불가</div>
+                              <div class="meta">${file.name}<br/>원본: ${humanFileSize(file.size)}<br/>최적화: ${humanFileSize(res.size)}<br/>(${res.width}×${res.height}px)</div>`;
+        previewEl.appendChild(warnCard);
+        // 업로드 목록에 추가하지 않음 (과도한 용량)
+        continue;
+      }
 
-      // 미리보기 카드 추가
+      // 성공적 최적화: 미리보기 표시
       const card = document.createElement('div');
       card.className = 'preview';
       const imgEl = document.createElement('img');
       imgEl.src = URL.createObjectURL(res.blob);
       imgEl.onload = ()=> URL.revokeObjectURL(imgEl.src);
       card.appendChild(imgEl);
-
       const meta = document.createElement('div');
       meta.className = 'meta';
-      meta.innerHTML = `
-        ${file.name}<br/>
-        원본: ${humanFileSize(file.size)}<br/>
-        최적화: ${humanFileSize(res.blob.size)}<br/>
-        ${res.width}×${res.height}px, Q=${res.quality}
-      `;
+      meta.innerHTML = `${file.name}<br/>원본: ${humanFileSize(file.size)}<br/>최적화: ${humanFileSize(res.size)}<br/>${res.width}×${res.height}px, Q=${res.quality.toFixed(2)}`;
       card.appendChild(meta);
       previewEl.appendChild(card);
 
+      optimizedFiles.push({
+        name: file.name.replace(/\s+/g,'_').replace(/[^\w\-.]/g,''),
+        blob: res.blob,
+        size: res.size,
+        width: res.width,
+        height: res.height,
+        quality: res.quality
+      });
     } catch(err){
-      console.error('압축 실패', err);
+      console.error('최적화 실패', err);
       const warn = document.createElement('div');
-      warn.textContent = `압축 실패: ${file.name}`;
-      statusArea.appendChild(warn);
+      warn.className = 'preview';
+      warn.innerHTML = `<div style="color:#b22222;font-weight:700">처리 실패</div><div class="meta">${file.name}</div>`;
+      previewEl.appendChild(warn);
     }
   }
 
-  statusArea.textContent = `이미지 최적화 완료 (${optimizedFiles.length}장 준비됨).`;
+  statusArea.textContent = `최적화 완료: 업로드 준비된 이미지 ${optimizedFiles.length}장.`;
   submitBtn.disabled = false;
 });
 
-// 제출 처리: FormData에 최적화된 이미지를 넣어 XHR로 전송
-submitBtn.addEventListener('click', function(){
-  (async ()=>{
-    // 기본 필드 유효성 체크
-    const businessName = document.getElementById('business_name').value.trim();
-    const address = document.getElementById('address').value.trim();
-    const phone = document.getElementById('phone').value.trim();
-    const discount = document.getElementById('discount').value.trim();
-    const navermap = document.getElementById('navermap').value.trim();
-    const description = document.getElementById('description').value.trim();
+// 전송 수행 함수
+async function sendForm(includeImages = true){
+  // 간단 필드 유효성
+  const businessName = document.getElementById('business_name').value.trim();
+  const address = document.getElementById('address').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  const discount = document.getElementById('discount').value.trim();
+  const navermap = document.getElementById('navermap').value.trim();
+  const description = document.getElementById('description').value.trim();
 
-    if(!businessName || !address || !phone || !discount || !navermap || !description){
-      alert('필수 항목을 모두 입력해 주세요.');
-      return;
+  if(!businessName || !address || !phone || !discount || !navermap || !description){
+    alert('필수 항목을 모두 입력해 주세요.');
+    return;
+  }
+
+  // 만약 이미지를 포함하려 했지만 최적화된 파일이 없으면 경고
+  if(includeImages && selectedFiles.length > 0 && optimizedFiles.length === 0){
+    const ok = confirm('이미지 최적화가 실패했습니다. 이미지를 제외하고 전송하시겠습니까? 확인 -> 제외하고 전송, 취소 -> 중단');
+    if(!ok) return;
+    includeImages = false;
+  }
+
+  // FormData 준비
+  const fd = new FormData();
+  fd.append('업체명', businessName);
+  fd.append('주소지', address);
+  fd.append('전화번호', phone);
+  fd.append('SUT_할인율', discount);
+  fd.append('네이버지도링크', navermap);
+  fd.append('업체소개', description);
+  fd.append('홍보태그', document.getElementById('tags').value || '');
+  fd.append('_next', 'https://google.com');
+  fd.append('_captcha', 'false');
+
+  if(includeImages && optimizedFiles.length > 0){
+    for(let i=0;i<optimizedFiles.length;i++){
+      const f = optimizedFiles[i];
+      const fname = `${Date.now()}_${i}_${f.name}`;
+      fd.append('사진[]', f.blob, fname);
     }
+  }
 
-    // 파일 준비: 선택했지만 최적화가 안 된 경우(예: 브라우저 압축 실패) 대비
-    if(selectedFiles.length > 0 && optimizedFiles.length === 0){
-      const ok = confirm('이미지 최적화가 준비되지 않았습니다. 원본 이미지를 그대로 업로드하시겠습니까? (권장하지 않습니다)');
-      if(!ok) return;
-    }
+  // XHR 전송(진행률 표시)
+  try{
+    submitBtn.disabled = true;
+    submitBtn.textContent = '전송 중...';
+    progressWrap.style.display = 'block';
+    progressBar.style.width = '0%';
+    statusArea.textContent = '서버로 전송 중...';
 
-    // FormData 생성
-    const fd = new FormData();
-    fd.append('업체명', businessName);
-    fd.append('주소지', address);
-    fd.append('전화번호', phone);
-    fd.append('SUT_할인율', discount);
-    fd.append('네이버지도링크', navermap);
-    fd.append('업체소개', description);
-    fd.append('홍보태그', document.getElementById('tags').value || '');
+    const xhr = new XMLHttpRequest();
+    const endpoint = 'https://formsubmit.co/choieuisin@naver.com';
+    xhr.open('POST', endpoint, true);
 
-    // _next, _captcha (Formsubmit 사용 규칙)
-    fd.append('_next', 'https://google.com');
-    fd.append('_captcha','false');
-
-    // 첨부: 최적화된 파일들을 '사진[]'으로 append
-    if(optimizedFiles.length > 0){
-      for(let i=0;i<optimizedFiles.length;i++){
-        const f = optimizedFiles[i];
-        // 파일명 중복 방지
-        const fileName = `${Date.now()}_${i}_${f.name}`;
-        fd.append('사진[]', f.blob, fileName);
+    // 타임아웃 (예: 60초)
+    xhr.timeout = 60000;
+    xhr.upload.onprogress = function(e){
+      if(e.lengthComputable){
+        const pct = Math.round((e.loaded / e.total) * 100);
+        progressBar.style.width = pct + '%';
       }
-    } else {
-      // 선택은 했지만 최적화 파일이 없을 경우, 원본 업로드
-      for(const f of selectedFiles){
-        fd.append('사진[]', f, f.name);
-      }
-    }
+    };
 
-    // 전송
-    try{
-      submitBtn.disabled = true;
-      submitBtn.textContent = '전송 중...';
-      progressWrap.style.display = 'block';
-      progressBar.style.width = '0%';
-      statusArea.textContent = '서버로 전송 중...';
-
-      // XHR 사용(진행률 체크 가능)
-      const xhr = new XMLHttpRequest();
-      const endpoint = 'https://formsubmit.co/choieuisin@naver.com';
-      xhr.open('POST', endpoint, true);
-      xhr.upload.onprogress = function(e){
-        if(e.lengthComputable){
-          const pct = Math.round((e.loaded / e.total) * 100);
-          progressBar.style.width = pct + '%';
-        }
-      };
-      xhr.onload = function(){
-        if(xhr.status >= 200 && xhr.status < 300){
-          statusArea.textContent = '제출 완료! 이메일로 접수 내용이 전송되었습니다.';
-          progressBar.style.width = '100%';
-          // 제출 성공 후 리디렉션이나 초기화
-          // 여기서는 간단 알림 후 폼 리셋
-          alert('제출이 완료되었습니다. 감사합니다.');
-          form.reset();
-          previewEl.innerHTML = '';
-          optimizedFiles = [];
-          selectedFiles = [];
-          progressWrap.style.display = 'none';
-        } else {
-          console.error('전송 실패', xhr.status, xhr.responseText);
-          statusArea.textContent = `전송 실패: 서버 응답 ${xhr.status}`;
-          alert('전송 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
-        }
-        submitBtn.disabled = false;
-        submitBtn.textContent = '제출하기';
-      };
-      xhr.onerror = function(){
-        statusArea.textContent = '전송 오류(네트워크 또는 서버).';
-        alert('네트워크 또는 서버 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
-        submitBtn.disabled = false;
-        submitBtn.textContent = '제출하기';
-        progressWrap.style.display = 'none';
-      };
-      xhr.send(fd);
-
-    } catch(err){
-      console.error(err);
-      alert('전송 중 오류가 발생했습니다: ' + err.message);
+    xhr.ontimeout = function(){
+      statusArea.textContent = '전송 실패: 타임아웃';
+      alert('서버 응답이 없습니다(타임아웃). 잠시 후 다시 시도해 주세요.');
       submitBtn.disabled = false;
       submitBtn.textContent = '제출하기';
       progressWrap.style.display = 'none';
-    }
-  })();
+    };
+
+    xhr.onload = function(){
+      if(xhr.status >=200 && xhr.status < 300){
+        statusArea.textContent = '제출 완료! 이메일로 접수 내용이 전송되었습니다.';
+        progressBar.style.width = '100%';
+        alert('제출이 완료되었습니다. 감사합니다.');
+        form.reset();
+        previewEl.innerHTML = '';
+        optimizedFiles = [];
+        selectedFiles = [];
+        progressWrap.style.display = 'none';
+      } else {
+        console.error('전송 실패', xhr.status, xhr.responseText);
+        statusArea.textContent = `전송 실패: 서버 응답 ${xhr.status}`;
+        // 500 에러 등 서버측 문제인 경우, 안내 및 이미지 제외 전송 제안
+        if(xhr.status >= 500){
+          const retry = confirm('서버에서 오류(500 등)가 발생했습니다. 이미지를 제외하고 다시 전송하시겠습니까? 예 -> 제외하고 전송, 아니오 -> 취소');
+          if(retry){
+            sendForm(false); // 이미지 제외 후 재전송
+            return;
+          }
+        } else {
+          alert('전송 중 오류가 발생했습니다. 응답 코드: ' + xhr.status);
+        }
+      }
+      submitBtn.disabled = false;
+      submitBtn.textContent = '제출하기';
+      progressWrap.style.display = 'none';
+    };
+
+    xhr.onerror = function(){
+      statusArea.textContent = '전송 오류(네트워크 또는 서버).';
+      alert('네트워크 또는 서버 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
+      submitBtn.disabled = false;
+      submitBtn.textContent = '제출하기';
+      progressWrap.style.display = 'none';
+    };
+
+    xhr.send(fd);
+
+  } catch(err){
+    console.error(err);
+    alert('전송 중 오류가 발생했습니다: ' + err.message);
+    submitBtn.disabled = false;
+    submitBtn.textContent = '제출하기';
+    progressWrap.style.display = 'none';
+  }
+}
+
+// 버튼 이벤트
+submitBtn.addEventListener('click', ()=> sendForm(true));
+sendWithoutImagesBtn.addEventListener('click', ()=> {
+  if(!confirm('이미지를 제외하고 전송합니다. 계속할까요?')) return;
+  sendForm(false);
 });
 </script>
 </body>
