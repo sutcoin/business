@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>업체 정보 제출</title>
+  <meta name="description" content="업체 정보를 입력하고 이미지와 함께 안전하게 제출하세요." />
+  <style>
+    :root{--bg:#f5f7fb;--card:#fff;--primary:#0b74de;--muted:#6b7280;--radius:12px;--max-width:900px}
+    *{box-sizing:border-box} body{font-family: Inter, "Noto Sans KR", system-ui; margin:0; padding:24px; background:var(--bg); color:#111}
+    .wrap{max-width:var(--max-width); margin:20px auto; padding:20px}
+    .card{background:var(--card); border-radius:var(--radius); padding:20px; box-shadow:0 8px 30px rgba(12,20,30,0.06)}
+    header{display:flex;gap:16px;align-items:center;margin-bottom:12px}
+    header h1{margin:0;font-size:20px;color:var(--primary)} header p{margin:0;color:var(--muted);font-size:13px}
+    form{display:grid;grid-template-columns:1fr 340px;gap:18px;align-items:start}
+    .left{display:flex;flex-direction:column;gap:10px}
+    label{font-weight:600;font-size:14px;margin-bottom:6px;display:block;color:#111}
+    input[type="text"],input[type="tel"],input[type="url"],input[type="number"],textarea{width:100%;padding:12px;border-radius:10px;border:1px solid #e6e9ef;background:#fff;font-size:14px;outline:none}
+    input:focus,textarea:focus{box-shadow:0 4px 18px rgba(11,116,222,0.08);border-color:var(--primary)}
+    textarea{min-height:120px;resize:vertical}
+    .row{display:flex;gap:12px}.row .col{flex:1}
+    .right{border-left:1px dashed #eef2f6;padding-left:18px;min-height:200px}
+    .photos-box{border:1px dashed #e6eefc;border-radius:10px;padding:12px;background:linear-gradient(180deg, rgba(11,116,222,0.02), rgba(255,255,255,0))}
+    .photos-box input{width:100%;padding:6px 0}
+    .preview-grid{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+    .thumb{width:100px;height:80px;border-radius:8px;overflow:hidden;background:#fafafa;border:1px solid #eef2f6;display:flex;align-items:center;justify-content:center;position:relative}
+    .thumb img{max-width:100%;max-height:100%;display:block}
+    .meta{font-size:12px;color:var(--muted);margin-top:10px}
+    .actions{display:flex;gap:12px;margin-top:18px;align-items:center}
+    button.primary{background:var(--primary);color:#fff;border:0;padding:12px 18px;border-radius:10px;font-weight:700;cursor:pointer}
+    button.ghost{background:transparent;border:1px solid #dbe7fb;padding:10px 14px;border-radius:10px;color:var(--primary);cursor:pointer}
+    .status{margin-top:12px;font-size:13px}
+    .progress{width:100%;height:8px;background:#f0f4fb;border-radius:8px;overflow:hidden;margin-top:8px}
+    .bar{height:100%;width:0%;background:var(--primary);transition:width .2s}
+    .help{font-size:13px;color:var(--muted);margin-top:10px}
+    footer{margin-top:16px;font-size:13px;color:var(--muted);text-align:center}
+    @media (max-width:900px){form{grid-template-columns:1fr}.right{border-left:none;padding-left:0;margin-top:6px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card" role="region" aria-labelledby="formTitle">
+      <header>
+        <div>
+          <h1 id="formTitle">업체 정보 제출</h1>
+          <p>업체 정보를 입력하고 이미지(선택)를 함께 업로드 하세요. (최대 5장)</p>
+        </div>
+      </header>
+
+      <!-- !! form action: 배포된 서버의 /submit 로 설정되어야 합니다.
+           현재는 로그에서 보였던 주소(예: business-2-8t8.onrender.com)로 설정해 두었습니다.
+           만약 Render에서 제공된 주소가 다르면 여기를 그 주소로 바꿔주세요. -->
+      <form id="bizForm" action="https://business-2-8t8.onrender.com/submit" method="POST" enctype="multipart/form-data" novalidate>
+        <div class="left">
+          <div>
+            <label for="name">업체명 <span style="color:#d02525">*</span></label>
+            <input id="name" name="업체명" type="text" placeholder="예: OO카페" required />
+          </div>
+
+          <div>
+            <label for="addr">주소지 <span style="color:#d02525">*</span></label>
+            <input id="addr" name="주소지" type="text" placeholder="예: 대전광역시 ..." required />
+          </div>
+
+          <div class="row">
+            <div class="col">
+              <label for="phone">전화번호 <span style="color:#d02525">*</span></label>
+              <input id="phone" name="전화번호" type="tel" placeholder="010-1234-5678" required />
+            </div>
+            <div class="col">
+              <label for="discount">SUT 할인율 (%) <span style="color:#d02525">*</span></label>
+              <input id="discount" name="SUT_할인율" type="number" min="0" max="100" step="0.01" placeholder="예: 10" required />
+            </div>
+          </div>
+
+          <div>
+            <label for="naver">네이버지도 링크 <span style="color:#d02525">*</span></label>
+            <input id="naver" name="네이버지도링크" type="url" placeholder="https://map.naver.com/..." required />
+          </div>
+
+          <div>
+            <label for="desc">업체 소개 <span style="color:#d02525">*</span></label>
+            <textarea id="desc" name="업체소개" placeholder="가게를 소개하는 글을 적어주세요." required></textarea>
+          </div>
+
+          <div>
+            <label for="tags">가게 홍보 태그</label>
+            <input id="tags" name="홍보태그" type="text" placeholder="#카페 #디저트" />
+          </div>
+
+          <div class="actions">
+            <button id="submitBtn" class="primary" type="submit">제출하기</button>
+            <button id="clearBtn" type="button" class="ghost">양식 초기화</button>
+            <div style="flex:1"></div>
+          </div>
+
+          <div class="status" id="statusArea" aria-live="polite"></div>
+          <div class="progress" id="progressWrap" style="display:none"><div class="bar" id="progressBar"></div></div>
+
+        </div>
+
+        <aside class="right" aria-label="이미지 업로드 및 미리보기">
+          <div class="photos-box">
+            <label for="photos">업체홍보 사진 (최대 5장)</label>
+            <input id="photos" name="photos" type="file" accept="image/*" multiple />
+            <div class="help">권장: 가로/세로 1200px 이하, 파일당 1~2MB 이하</div>
+
+            <div id="preview" class="preview-grid" aria-live="polite"></div>
+            <div class="meta" id="metaInfo"></div>
+          </div>
+
+          <div style="margin-top:12px" class="help">
+            <strong>주의:</strong> 서버 연결문제가 있을 경우 개발자 도구 Console 또는 Render 로그를 확인하세요.
+          </div>
+        </aside>
+      </form>
+
+      <footer>제출된 정보는 블로그 게시용으로 사용됩니다. 개인정보는 안전하게 처리됩니다.</footer>
+    </div>
+  </div>
+
+<script>
+const form = document.getElementById('bizForm');
+const photosEl = document.getElementById('photos');
+const previewEl = document.getElementById('preview');
+const statusArea = document.getElementById('statusArea');
+const submitBtn = document.getElementById('submitBtn');
+const clearBtn = document.getElementById('clearBtn');
+const progressWrap = document.getElementById('progressWrap');
+const progressBar = document.getElementById('progressBar');
+const metaInfo = document.getElementById('metaInfo');
+const MAX_FILES = 5;
+
+function humanFileSize(bytes){
+  if(bytes===0) return '0 B';
+  const i = Math.floor(Math.log(bytes)/Math.log(1024));
+  const sizes = ['B','KB','MB','GB'];
+  return (bytes/Math.pow(1024,i)).toFixed(i===0?0:2) + ' ' + sizes[i];
+}
+
+photosEl.addEventListener('change', () => {
+  previewEl.innerHTML = '';
+  metaInfo.textContent = '';
+  const files = Array.from(photosEl.files || []);
+  if(files.length === 0) return;
+  if(files.length > MAX_FILES){
+    alert(`사진은 최대 ${MAX_FILES}장까지 업로드 가능합니다.`);
+    photosEl.value = '';
+    return;
+  }
+  files.slice(0,MAX_FILES).forEach(f => {
+    const box = document.createElement('div');
+    box.className = 'thumb';
+    const img = document.createElement('img');
+    box.appendChild(img);
+    previewEl.appendChild(box);
+    const reader = new FileReader();
+    reader.onload = (e) => { img.src = e.target.result; };
+    reader.readAsDataURL(f);
+  });
+  const total = files.reduce((s,f)=> s + (f.size||0), 0);
+  metaInfo.textContent = `선택: ${files.length}장 · 총 용량 ${humanFileSize(total)}`;
+});
+
+clearBtn.addEventListener('click', () => {
+  form.reset();
+  previewEl.innerHTML = '';
+  metaInfo.textContent = '';
+  statusArea.textContent = '';
+});
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  statusArea.textContent = '';
+  const requiredFields = ['업체명','주소지','전화번호','SUT_할인율','네이버지도링크','업체소개'];
+  for(const name of requiredFields){
+    const el = form.querySelector(`[name="${name}"]`);
+    if(!el || !el.value || el.value.toString().trim() === ''){
+      el && el.focus();
+      statusArea.textContent = `필수 항목이 비어 있습니다: ${name}`;
+      return;
+    }
+  }
+  const files = Array.from(photosEl.files || []);
+  if(files.length > MAX_FILES){
+    statusArea.textContent = `사진은 최대 ${MAX_FILES}장까지 업로드 가능합니다.`;
+    return;
+  }
+
+  const fd = new FormData();
+  fd.append('업체명', form.querySelector('[name="업체명"]').value.trim());
+  fd.append('주소지', form.querySelector('[name="주소지"]').value.trim());
+  fd.append('전화번호', form.querySelector('[name="전화번호"]').value.trim());
+  fd.append('SUT_할인율', form.querySelector('[name="SUT_할인율"]').value.trim());
+  fd.append('네이버지도링크', form.querySelector('[name="네이버지도링크"]').value.trim());
+  fd.append('업체소개', form.querySelector('[name="업체소개"]').value.trim());
+  fd.append('홍보태그', form.querySelector('[name="홍보태그"]').value.trim());
+  files.forEach((f) => fd.append('photos', f, f.name));
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = '전송중...';
+  progressWrap.style.display = 'block';
+  progressBar.style.width = '0%';
+  statusArea.textContent = '서버로 전송 중...';
+
+  try {
+    await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', form.action, true);
+      xhr.timeout = 60000;
+      xhr.upload.onprogress = (ev) => {
+        if(ev.lengthComputable){
+          const pct = Math.round((ev.loaded / ev.total) * 100);
+          progressBar.style.width = pct + '%';
+        }
+      };
+      xhr.onload = function(){
+        if(xhr.status >= 200 && xhr.status < 300){
+          try {
+            const json = JSON.parse(xhr.responseText || '{}');
+            statusArea.textContent = (json.ok ? '제출 완료: ' : '전송 실패: ') + (json.message || xhr.statusText);
+          } catch(e) {
+            statusArea.textContent = '제출 완료 (서버 응답 확인 불가)';
+          }
+          resolve();
+        } else {
+          reject(new Error('서버 오류: ' + xhr.status + ' ' + xhr.statusText));
+        }
+      };
+      xhr.onerror = function(){ reject(new Error('네트워크 오류 또는 CORS 에러')); };
+      xhr.ontimeout = function(){ reject(new Error('전송 타임아웃')); };
+      xhr.send(fd);
+    });
+
+    form.reset();
+    previewEl.innerHTML = '';
+    metaInfo.textContent = '';
+  } catch(err){
+    console.error(err);
+    statusArea.textContent = '전송 실패: ' + err.message;
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = '제출하기';
+    progressWrap.style.display = 'none';
+    progressBar.style.width = '0%';
+  }
+});
+</script>
+</body>
+</html>
