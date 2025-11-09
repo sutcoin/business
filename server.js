@@ -17,6 +17,16 @@ const crypto = require('crypto');
 const path = require('path');
 const cors = require('cors');
 
+const allowedOriginEnv = process.env.CORS_ORIGIN || process.env.ALLOW_ORIGIN || '*';
+
+// allowedOriginEnv === '*' 이면 모든 출처 허용
+const corsOptions = {
+  origin: allowedOriginEnv === '*' ? true : allowedOriginEnv
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
+
 const app = express();
 
 // --------------- MIDDLEWARE ---------------
