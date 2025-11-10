@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>업체 정보 제출</title>
   <style>
-    /* Reset-ish */
+    /* Reset & 기본 */
     *{box-sizing:border-box}
-    body{font-family: "Noto Sans KR", "Apple SD Gothic Neo", "Arial", sans-serif; background:#f1f6fb; margin:0; color:#112}
+    body{font-family: "Noto Sans KR", "Apple SD Gothic Neo", Arial, sans-serif; background:#f1f6fb; margin:0; color:#112}
     .container{max-width:1100px;margin:36px auto;padding:20px}
 
     /* Card */
@@ -25,10 +25,11 @@
     /* Left form area */
     .form-area{flex:1;padding-right:8px}
     h1{margin:0 0 8px;font-size:20px}
-    .subtitle{color:#556;color:#6b7280;font-size:13px;margin-bottom:18px}
+    .subtitle{color:#6b7280;font-size:13px;margin-bottom:18px}
 
+    /* 공통 input 스타일 — 모든 입력을 동일 너비로 */
     label{display:block;font-weight:600;margin-top:12px;color:#223}
-    input[type="text"], input[type="tel"], input[type="url"], input[type="number"], textarea {
+    input[type="text"], input[type="tel"], input[type="url"], input[type="number"], textarea, input[type="email"] {
       width:100%;
       padding:12px 14px;
       margin-top:8px;
@@ -40,8 +41,12 @@
       outline:none;
     }
     textarea{min-height:120px;resize:vertical}
-    .row{display:flex;gap:12px}
-    .small{width:160px}
+
+    /* .row: 기본은 flex, 각 칸은 flex-basis로 균형 잡음 */
+    .row{display:flex;gap:12px;align-items:flex-end}
+    .row > .flex{flex:1; min-width:0} /* overflow 방지 위해 min-width:0 */
+    .small{width:160px;flex:0 0 160px} /* 고정 작은 필드 (SUT 등) */
+    .small input{width:100%} /* small 내부 input은 100% 채움 */
 
     /* Right panel */
     .side{width:340px;flex-shrink:0;padding:18px;border-radius:10px;border:1px dashed #e6eef6;background: linear-gradient(180deg, #fff, #fbfdff)}
@@ -66,8 +71,8 @@
     @media(max-width:960px){
       .card{flex-direction:column}
       .side{width:100%}
+      .small{width:120px;flex:0 0 120px}
     }
-
   </style>
 </head>
 <body>
@@ -84,11 +89,12 @@
           <label>주소지 <span style="color:#d02525">*</span></label>
           <input name="주소지" placeholder="예: 대전광역시 ..." required />
 
-          <div class="row" style="align-items:flex-end;">
-            <div style="flex:1">
+          <div class="row">
+            <div class="flex">
               <label>전화번호 <span style="color:#d02525">*</span></label>
               <input name="전화번호" placeholder="010-1234-5678" required />
             </div>
+
             <div class="small">
               <label>SUT 할인율 (%) <span style="color:#d02525">*</span></label>
               <input name="SUT_할인율" type="number" placeholder="예: 10" required />
@@ -139,7 +145,6 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxiF5OfDy-SR0VAJdKhv
 const form = document.getElementById('bizForm');
 const photosEl = document.getElementById('photos');
 const preview = document.getElementById('preview');
-const statusArea = null;
 const submitBtn = document.getElementById('submitBtn');
 const resetBtn = document.getElementById('resetBtn');
 
@@ -147,7 +152,6 @@ const MAX_FILES = 5;
 const MAX_WIDTH = 1200;
 const QUALITY = 0.75;
 
-/* thumb 만들기 */
 function makeThumb(blobUrl){
   const d = document.createElement('div');
   d.className = 'thumb';
@@ -157,7 +161,6 @@ function makeThumb(blobUrl){
   return d;
 }
 
-/* 파일 선택시 미리보기 */
 photosEl.addEventListener('change', () => {
   preview.innerHTML = '';
   const files = Array.from(photosEl.files || []);
@@ -172,7 +175,6 @@ photosEl.addEventListener('change', () => {
   });
 });
 
-/* 이미지 리사이즈: file -> Blob (jpeg) */
 function resizeImageFile(file, maxWidth=MAX_WIDTH, quality=QUALITY){
   return new Promise((resolve, reject) => {
     if (!file.type.startsWith('image/')) return reject(new Error('not image'));
@@ -198,7 +200,6 @@ function resizeImageFile(file, maxWidth=MAX_WIDTH, quality=QUALITY){
   });
 }
 
-/* blob -> base64 (prefix 제거) */
 function blobToBase64NoPrefix(blob){
   return new Promise((resolve, reject) => {
     const fr = new FileReader();
@@ -212,13 +213,11 @@ function blobToBase64NoPrefix(blob){
   });
 }
 
-/* 폼 리셋 */
 resetBtn.addEventListener('click', () => {
   form.reset();
   preview.innerHTML = '';
 });
 
-/* 제출 처리 */
 form.addEventListener('submit', async (ev) => {
   ev.preventDefault();
   submitBtn.disabled = true;
@@ -245,7 +244,6 @@ form.addEventListener('submit', async (ev) => {
       return;
     }
 
-    // 이미지 처리: 리사이즈 후 base64로 변환
     const images = [];
     for (const f of files){
       try {
@@ -268,7 +266,6 @@ form.addEventListener('submit', async (ev) => {
       images: images
     };
 
-    // POST
     const resp = await fetch(SCRIPT_URL, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
