@@ -1,175 +1,260 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>업체 정보 제출</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>업체 정보 제출</title>
+<link rel="preconnect" href="https://fonts.gstatic.com">
+<style>
+  :root{
+    --bg:#f2f6fb;
+    --card:#ffffff;
+    --accent:#0066ff;
+    --muted:#6b7a90;
+    --input-bg:#f7fbff;
+    --border:#e3edf9;
+    --radius:14px;
+  }
+  html,body{height:100%;margin:0;font-family: "Noto Sans KR", "Segoe UI", Roboto, Arial, sans-serif;background:var(--bg);color:#122;}
+  .wrap{max-width:1120px;margin:36px auto;padding:28px;}
+  .card{
+    background:var(--card);
+    border-radius:20px;
+    padding:28px;
+    box-shadow:0 8px 24px rgba(20,36,80,0.06);
+  }
 
-  <style>
-    body {
-      font-family: Pretendard, sans-serif;
-      background: #f2f5fb;
-      margin: 0;
-      padding: 40px;
-      display: flex;
-      justify-content: center;
-    }
+  h1{margin:0 0 6px;font-size:22px;color:#123;}
+  p.lead{margin:0 0 18px;color:var(--muted);font-size:14px}
 
-    .container {
-      width: 100%;
-      max-width: 1200px;
-      background: white;
-      padding: 40px;
-      border-radius: 16px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07);
-    }
+  .form-grid{display:grid;grid-template-columns:1fr 360px;gap:22px;align-items:start}
+  .main-col{padding-right:6px}
+  .side-col{padding-left:6px}
 
-    h2 {
-      margin-bottom: 10px;
-      color: #1a2b5c;
-    }
+  label{display:block;font-weight:700;margin:12px 0 8px;color:#2b3b55}
+  .input, textarea{
+    width:100%;
+    padding:12px 14px;
+    border-radius:12px;
+    border:1px solid var(--border);
+    background:var(--input-bg);
+    box-sizing:border-box;
+    font-size:14px;
+    color:#0f1b2b;
+  }
+  textarea{min-height:130px;resize:vertical;padding-top:12px}
+  .small-inline{display:flex;gap:12px;align-items:center}
+  .small-inline .small{flex:0 0 160px}
+  .small-inline .grow{flex:1}
 
-    label {
-      display: block;
-      font-weight: 600;
-      margin: 14px 0 6px;
-      color: #223;
-    }
+  .file-box{
+    border:2px dashed #e7eefc;
+    border-radius:12px;
+    padding:16px;
+    background:linear-gradient(180deg,#fbfdff, #f7fbff);
+  }
+  .file-label{font-weight:700;margin-bottom:8px;display:block}
+  .help{font-size:13px;color:var(--muted);margin-top:8px}
 
-    input, textarea {
-      width: 100%;
-      padding: 14px;
-      border-radius: 12px;
-      border: 1px solid #d7e3f0;
-      background: #f8fbff;
-      font-size: 15px;
-      box-sizing: border-box;
-    }
+  .btn-row{display:flex;gap:12px;align-items:center;margin-top:18px}
+  .btn-primary{
+    background:var(--accent);
+    color:white;border:none;padding:11px 18px;border-radius:12px;font-weight:700;cursor:pointer;
+    box-shadow:0 6px 18px rgba(0,102,255,0.15);
+  }
+  .btn-outline{background:white;border:1px solid #dbeafc;padding:10px 14px;border-radius:10px;cursor:pointer;color:#235;}
+  .note{font-size:13px;color:#99a2b8;margin-top:18px}
 
-    textarea {
-      min-height: 140px;
-      resize: none;
-    }
+  /* responsive */
+  @media(max-width:980px){
+    .form-grid{grid-template-columns:1fr; }
+    .side-col{order:2}
+  }
 
-    .row {
-      display: flex;
-      gap: 18px;
-    }
-
-    .small {
-      flex: 0 0 140px;
-    }
-
-    .flex {
-      flex: 1;
-    }
-
-    .img-box {
-      border: 1px solid #e7ecf3;
-      background: #fafcff;
-      padding: 16px;
-      border-radius: 14px;
-      height: fit-content;
-    }
-
-    button {
-      margin-top: 30px;
-      padding: 14px;
-      width: 130px;
-      background: #0058ff;
-      border: none;
-      color: white;
-      border-radius: 12px;
-      cursor: pointer;
-      font-size: 16px;
-    }
-  </style>
+  /* input focus */
+  .input:focus, textarea:focus {outline:none;border-color:#cfe1ff;box-shadow:0 6px 18px rgba(16,83,255,0.06)}
+</style>
 </head>
-
 <body>
-  <div class="container">
-    <h2>업체 정보 제출</h2>
-    <p>업체 정보를 입력하고 이미지를 업로드하세요. (최대 5장)</p>
+  <div class="wrap">
+    <div class="card">
+      <h1>업체 정보 제출</h1>
+      <p class="lead">업체 정보를 입력하고 이미지를 업로드하세요. (최대 5장)</p>
 
-    <form id="form">
-      <label>업체명 *</label>
-      <input name="storeName" placeholder="예: OO카페" required>
+      <div class="form-grid">
+        <!-- main column -->
+        <div class="main-col">
+          <form id="mainForm" onsubmit="return false;">
+            <!-- new fields: 닉네임, 코드, 소속 -->
+            <label for="nickname">닉네임</label>
+            <input id="nickname" name="nickname" class="input" placeholder="예: 홍길동" />
 
-      <label>주소지 *</label>
-      <input name="address" placeholder="예: 대전광역시 …" required>
+            <label for="code">코드</label>
+            <input id="code" name="code" class="input" placeholder="예: ABC123" />
 
-      <div class="row">
-        <div class="flex">
-          <label>전화번호 *</label>
-          <input name="phone" placeholder="예: 010-1234-5678" required>
+            <label for="affiliation">소속</label>
+            <input id="affiliation" name="affiliation" class="input" placeholder="예: OO협회 / 개인" />
+
+            <label for="storeName">업체명 <span style="color:#ff4d4f">*</span></label>
+            <input id="storeName" name="storeName" class="input" placeholder="예: ○○카페" required />
+
+            <label for="address">주소지 <span style="color:#ff4d4f">*</span></label>
+            <input id="address" name="address" class="input" placeholder="예: 대전광역시 ..." required />
+
+            <div style="display:flex;gap:18px;align-items:flex-end;">
+              <div style="flex:1">
+                <label for="phone">전화번호 <span style="color:#ff4d4f">*</span></label>
+                <input id="phone" name="phone" class="input" placeholder="010-1234-5678" required />
+              </div>
+
+              <div style="flex:0 0 160px">
+                <label for="discount">SUT 할인율 (%) <span style="color:#ff4d4f">*</span></label>
+                <input id="discount" name="discount" type="number" class="input" placeholder="예: 10" required />
+              </div>
+            </div>
+
+            <label for="mapUrl">네이버지도 링크 <span style="color:#ff4d4f">*</span></label>
+            <input id="mapUrl" name="mapUrl" class="input" placeholder="https://map.naver.com/..." required />
+
+            <label for="description">업체 소개 <span style="color:#ff4d4f">*</span></label>
+            <textarea id="description" name="description" class="input" placeholder="가게를 소개하는 글을 적어주세요." required></textarea>
+
+            <label for="tags">가게 홍보 태그</label>
+            <input id="tags" name="tags" class="input" placeholder="#카페 #디저트" />
+
+            <div class="btn-row">
+              <button id="submitBtn" class="btn-primary" onclick="handleSubmit()">제출하기</button>
+              <button type="button" class="btn-outline" onclick="resetForm()">양식 초기화</button>
+            </div>
+
+            <div class="note">제출된 정보는 블로그 게시용으로 사용됩니다. 개인정보는 안전하게 처리됩니다.</div>
+          </form>
         </div>
 
-        <div class="small">
-          <label>SUT 할인율 (%) *</label>
-          <input name="discount" type="number" placeholder="예: 10" required>
+        <!-- side column -->
+        <div class="side-col">
+          <div class="file-box">
+            <div class="file-label">업체홍보 사진 (최대 5장)</div>
+            <input id="fileInput" type="file" accept="image/*" multiple />
+            <div class="help">권장: 가로/세로 1200px 이하, 파일당 1~2MB 이하</div>
+            <div class="help" style="margin-top:10px;color:#8a96ad;font-size:13px">
+              주의: 서버 연결문제가 있을 경우 Apps Script 실행 로그를 확인하세요.
+            </div>
+          </div>
         </div>
       </div>
-
-      <label>네이버지도 링크 *</label>
-      <input name="mapUrl" placeholder="https://map.naver.com/..." required>
-
-      <label>업체 소개 *</label>
-      <textarea name="description" placeholder="가게 소개를 적어주세요." required></textarea>
-
-      <label>가게 홍보 태그</label>
-      <input name="tags" placeholder="#카페 #디저트">
-
-      <label>업체홍보 사진 (최대 5장)</label>
-      <input id="fileInput" type="file" accept="image/*" multiple>
-
-      <button type="button" onclick="submitForm()">제출하기</button>
-    </form>
+    </div>
   </div>
 
 <script>
-const SCRIPT_URL =
- "https://script.google.com/macros/s/AKfycbxFxPnYpJ_UUzRGGEfcVaEMvgb9DsLmJCjJMokQZaj4ULD_tRjBYdiH2acZT2oTjco88g/exec";
+/*
+  전송 방식:
+  - 이미지를 base64로 변환하여 payload.images 배열에 넣음
+  - FormData에 payload(JSON string) 필드로 붙여 POST
+  - 서버(Apps Script)에서 form 'payload' 또는 postData.contents 둘 다 수용하도록 구현되어 있어야 함
+*/
 
-async function submitForm() {
-  const form = document.getElementById("form");
-  const files = document.getElementById("fileInput").files;
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxFxPnYpJ_UUzRGGEfcVaEMvgb9DsLmJCjJMokQZaj4ULD_tRjBYdiH2acZT2oTjco88g/exec";
 
-  const payload = {
-    storeName: form.storeName.value,
-    address: form.address.value,
-    phone: form.phone.value,
-    discount: form.discount.value,
-    mapUrl: form.mapUrl.value,
-    description: form.description.value,
-    tags: form.tags.value,
-    images: []
-  };
+function resetForm(){
+  document.getElementById('mainForm').reset();
+  document.getElementById('fileInput').value = "";
+}
 
-  // ✅ 이미지 Base64 변환
-  for (let f of files) {
-    const reader = new FileReader();
-    await new Promise(resolve => {
-      reader.onload = e => {
-        payload.images.push({
-          name: f.name,
-          type: f.type,
-          data: e.target.result.split(",")[1]
-        });
-        resolve();
-      };
-      reader.readAsDataURL(f);
-    });
+function readFileAsBase64(file){
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = () => resolve(fr.result);
+    fr.onerror = reject;
+    fr.readAsDataURL(file);
+  });
+}
+
+async function handleSubmit(){
+  const submitBtn = document.getElementById('submitBtn');
+  submitBtn.disabled = true;
+  submitBtn.innerText = "전송중...";
+
+  try{
+    // 입력값 수집
+    const payload = {
+      nickname: document.getElementById('nickname').value || "",
+      code: document.getElementById('code').value || "",
+      affiliation: document.getElementById('affiliation').value || "",
+      storeName: document.getElementById('storeName').value.trim(),
+      address: document.getElementById('address').value.trim(),
+      phone: document.getElementById('phone').value.trim(),
+      discount: document.getElementById('discount').value,
+      mapUrl: document.getElementById('mapUrl').value.trim(),
+      description: document.getElementById('description').value.trim(),
+      tags: document.getElementById('tags').value || "",
+      images: []
+    };
+
+    // 간단 유효성 (필수)
+    if(!payload.storeName || !payload.address || !payload.phone || !payload.discount || !payload.mapUrl || !payload.description){
+      alert("필수 항목을 모두 입력해 주세요.");
+      submitBtn.disabled = false;
+      submitBtn.innerText = "제출하기";
+      return;
+    }
+
+    // 파일 처리 (최대 5장)
+    const files = document.getElementById('fileInput').files || [];
+    if(files.length > 5){
+      alert("이미지는 최대 5장까지 업로드 가능합니다.");
+      submitBtn.disabled = false;
+      submitBtn.innerText = "제출하기";
+      return;
+    }
+
+    for(let i=0;i<files.length;i++){
+      const f = files[i];
+      // 파일 용량/타입 체크(선택)
+      if(f.size > 4 * 1024 * 1024){ // 4MB 경고(허용 범위)
+        if(!confirm(f.name + "의 파일 크기가 " + Math.round(f.size/1024) + "KB 입니다. 계속 업로드할까요?")) {
+          submitBtn.disabled = false;
+          submitBtn.innerText = "제출하기";
+          return;
+        }
+      }
+      const dataUrl = await readFileAsBase64(f);
+      // dataUrl: "data:image/jpeg;base64,XXXX"
+      const base64 = dataUrl.split(',')[1];
+      payload.images.push({ name: f.name, type: f.type, data: base64 });
+    }
+
+    // FormData에 payload 붙여 POST (form 방식)
+    const fd = new FormData();
+    fd.append('payload', JSON.stringify(payload));
+
+    // fetch (서버 권한/URL이 올바르다면 정상 동작)
+    const res = await fetch(SCRIPT_URL, { method:'POST', body: fd });
+    if(!res.ok){
+      const text = await res.text().catch(()=>"");
+      alert("전송 실패: 서버 응답 오류\n" + res.status + " " + res.statusText + "\n" + text);
+      throw new Error("Server response not OK");
+    }
+
+    // 서버가 JSON을 반환할 경우 확인
+    let j = null;
+    try{ j = await res.json(); }catch(e){}
+    if(j && j.ok){
+      alert("제출 완료되었습니다!");
+      resetForm();
+    } else {
+      // j가 없거나 ok=false인 경우
+      alert("서버 응답: " + (j && j.message ? j.message : "처리 완료(응답 확인 불가)"));
+      resetForm();
+    }
+  }catch(err){
+    console.error(err);
+    alert("전송 실패: 네트워크 오류 또는 서버 문제입니다.");
+  }finally{
+    submitBtn.disabled = false;
+    submitBtn.innerText = "제출하기";
   }
-
-  // ✅ form POST (CORS 없음!)
-  const formData = new FormData();
-  formData.append("payload", JSON.stringify(payload));
-
-  fetch(SCRIPT_URL, { method: "POST", body: formData })
-    .then(() => alert("전송 완료!"))
-    .catch(() => alert("전송 실패: 네트워크 오류 또는 Google Script URL 확인"));
 }
 </script>
-
 </body>
 </html>
